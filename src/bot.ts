@@ -107,6 +107,10 @@ bot.hears(["@all"], async (ctx) => {
   });
 });
 
+bot.command("test", async (ctx) => {
+  await ctx.reply("✅ Бот Джарвіс на зв'язку! Все працює коректно.");
+});
+
 // --- ОБРОБКА ПОМИЛОК ---
 bot.catch((err) => {
   const e = err.error;
