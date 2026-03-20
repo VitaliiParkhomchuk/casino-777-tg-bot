@@ -1,29 +1,48 @@
-import fs from "node:fs/promises";
+import mongoose from "mongoose";
+import { config } from "./config.js";
 
-export interface User {
+// 1. Створюємо інтерфейс для юзера (опис того, як виглядає об'єкт юзера)
+export interface IUser {
   id: number;
   username?: string;
-  first_name: string;
+  first_name?: string;
+  date_added?: Date;
 }
 
-const DB_PATH = "./users.json";
+// Підключаємося до бази
+mongoose
+  .connect(config.MONGO_URL)
+  .then(() => console.log("📦 Підключено до MongoDB!"))
+  .catch((err) => console.error("❌ Помилка підключення до MongoDB:", err));
 
-export async function saveUser(user: User) {
+// 2. Вказуємо тип <IUser> для схеми
+const userSchema = new mongoose.Schema<IUser>({
+  id: { type: Number, required: true, unique: true },
+  username: String,
+  first_name: String,
+  date_added: { type: Date, default: Date.now },
+});
+
+// 3. Створюємо модель з типом <IUser>
+const User = mongoose.model<IUser>("User", userSchema);
+
+// 4. Додаємо тип : IUser до аргументу функції
+export async function saveUser(userData: IUser) {
   try {
-    const data = await fs.readFile(DB_PATH, "utf-8").catch(() => "[]");
-    const users: User[] = JSON.parse(data);
-
-    // Додаємо лише якщо юзера ще немає
-    if (!users.find((u) => u.id === user.id)) {
-      users.push(user);
-      await fs.writeFile(DB_PATH, JSON.stringify(users, null, 2));
-    }
-  } catch (e) {
-    console.error("Помилка при збереженні юзера:", e);
+    await User.findOneAndUpdate({ id: userData.id }, userData, {
+      upsert: true,
+    });
+  } catch (err) {
+    console.error("Помилка при збереженні юзера:", err);
   }
 }
 
-export async function getUsers(): Promise<User[]> {
-  const data = await fs.readFile(DB_PATH, "utf-8").catch(() => "[]");
-  return JSON.parse(data);
+// 5. Вказуємо, що функція повертає проміс із масивом юзерів Promise<IUser[]>
+export async function getUsers(): Promise<IUser[]> {
+  try {
+    return await User.find({});
+  } catch (err) {
+    console.error("Помилка при отриманні юзерів:", err);
+    return [];
+  }
 }
