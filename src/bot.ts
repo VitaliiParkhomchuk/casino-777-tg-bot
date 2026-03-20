@@ -1,12 +1,16 @@
+import express, { type Request, type Response } from "express"; // Додали Request та Response
 import { Bot, GrammyError, HttpError } from "grammy";
 import { config } from "./config.js";
 import { saveUser, getUsers } from "./db.js";
 
-import express from "express";
-
-// Створюємо міні-сервер, щоб Render не вимикав нас
+// Створюємо міні-сервер
 const app = express();
-app.get("/", (req, res) => res.send("Бот працює!"));
+
+// Явно вказуємо типи для req та res
+app.get("/", (req: Request, res: Response) => {
+  res.send("Бот Джарвіс працює!");
+});
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Веб-сервер запущено на порту ${port}`);
@@ -19,6 +23,7 @@ const bot = new Bot(config.BOT_TOKEN);
 async function setupBotCommands() {
   await bot.api.setMyCommands([
     { command: "all", description: "Покликати всіх учасників групи" },
+    { command: "test", description: "Перевірити, чи живий бот (працює в ЛС)" },
     // Тут можна додати інші команди в майбутньому
   ]);
   console.log("📜 Команди бота зареєстровані в Telegram!");
@@ -27,8 +32,22 @@ setupBotCommands();
 
 // --- ПЕРЕВІРКА ГРУПИ ---
 bot.use(async (ctx, next) => {
-  if (ctx.chat?.id !== config.GROUP_ID) return;
-  return next();
+  const isTargetGroup = ctx.chat?.id === config.GROUP_ID;
+  const isOwnerPrivate =
+    ctx.chat?.type === "private" && ctx.from?.id === config.ADMIN_ID;
+
+  if (isTargetGroup || isOwnerPrivate) {
+    return next();
+  }
+
+  // Якщо хтось інший пише в ЛС
+  if (ctx.chat?.type === "private") {
+    console.log(`Спроба доступу від стороннього юзера ID: ${ctx.from?.id}`);
+    await ctx.reply("Вибачте, цей бот приватний. Доступ лише для власника.");
+  }
+
+  // В усіх інших випадках (інші групи) - просто мовчимо
+  return;
 });
 
 // --- ЗБІР ЮЗЕРІВ ---

@@ -2,9 +2,10 @@ import "dotenv/config";
 
 export const config = {
   BOT_TOKEN: process.env.BOT_TOKEN || "",
-  GROUP_ID: Number(process.env.GROUP_ID) || 0, // Перетворюємо рядок на число
+  GROUP_ID: Number(process.env.GROUP_ID) || 0,
+  ADMIN_ID: Number(process.env.ADMIN_ID) || 0, // Додали ваш ID
 };
 
-if (!config.BOT_TOKEN || !config.GROUP_ID) {
-  throw new Error("BOT_TOKEN або GROUP_ID відсутні в .env файлі!");
+if (!config.BOT_TOKEN || !config.GROUP_ID || !config.ADMIN_ID) {
+  throw new Error("BOT_TOKEN, GROUP_ID або ADMIN_ID відсутні в .env файлі!");
 }
